@@ -165,35 +165,30 @@ get_plugin_mod(Plugin) ->
 
 %% @private
 get_plugin_mod_check(Plugin) ->
-    Mod = list_to_atom(atom_to_list(Plugin)++"_plugin"),
-    case code:ensure_loaded(Mod) of
-        {module, _} ->
-            Mod;
-        {error, nofile} ->
-            case code:ensure_loaded(Plugin) of
-                {module, _} ->
-                    Plugin;
-                {error, nofile} ->
-                    undefined
-            end
-    end.
-
+    ensure_loaded(Plugin, list_to_atom(atom_to_list(Plugin)++"_plugin")).
 
 %% @private
 get_callback_mod(Plugin) ->
-    Mod = list_to_atom(atom_to_list(Plugin)++"_callbacks"),
-    case code:ensure_loaded(Mod) of
+    ensure_loaded(Plugin, list_to_atom(atom_to_list(Plugin)++"_callbacks")).
+
+%% @private
+ensure_loaded(Plugin, Mod) ->
+    case ensure_mod_loaded(Mod) of
         {module, _} ->
             Mod;
         {error, nofile} ->
-            case code:ensure_loaded(Plugin) of
-                {module, _} ->
-                    Plugin;
-                {error, nofile} ->
-                    undefined
+            case ensure_mod_loaded(Plugin) of
+                {module, _}     -> Plugin;
+                {error, nofile} -> undefined
             end
     end.
 
+%% @private
+ensure_mod_loaded(Mod) ->
+    case code:ensure_loaded(Mod) of
+        {error, embedded} -> code:load_file(Mod);
+        Result            -> Result
+    end.
 
 %% @private Expands a list of plugins with their dependencies
 %% First in the returned list will be the higher-level plugins, last one
